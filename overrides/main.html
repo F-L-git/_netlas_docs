@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block styles %}
+  <!-- Netlas Fonts -->
+  <link rel="stylesheet" href="https://cdn.netlas.io/fonts/fonts.css">
+  {{ super() }}
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ config.extra.analytics.container_id }}"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
+{% endblock %} 

@@ -1,0 +1,100 @@
+<!--
+  Copyright (c) 2016-2024 Martin Donath <martin.donath@squidfunk.com>
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to
+  deal in the Software without restriction, including without limitation the
+  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+  sell copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+  IN THE SOFTWARE.
+-->
+
+<!--
+  A collection of functions used from within some partials to allow the usage
+  of state saved in local or session storage, e.g. to model preferences.
+-->
+<script>
+  const DOMAIN = "netlas.io";
+  !function(e,t){"object"==typeof exports&&"undefined"!=typeof module?module.exports=t():"function"==typeof define&&define.amd?define(t):(e="undefined"!=typeof globalThis?globalThis:e||self,function(){var n=e.Cookies,o=e.Cookies=t();o.noConflict=function(){return e.Cookies=n,o}}())}(this,(function(){"use strict";function e(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var o in n)e[o]=n[o]}return e}var t=function t(n,o){function r(t,r,i){if("undefined"!=typeof document){"number"==typeof(i=e({},o,i)).expires&&(i.expires=new Date(Date.now()+864e5*i.expires)),i.expires&&(i.expires=i.expires.toUTCString()),t=encodeURIComponent(t).replace(/%(2[346B]|5E|60|7C)/g,decodeURIComponent).replace(/[()]/g,escape);var c="";for(var u in i)i[u]&&(c+="; "+u,!0!==i[u]&&(c+="="+i[u].split(";")[0]));return document.cookie=t+"="+n.write(r,t)+c}}return Object.create({set:r,get:function(e){if("undefined"!=typeof document&&(!arguments.length||e)){for(var t=document.cookie?document.cookie.split("; "):[],o={},r=0;r<t.length;r++){var i=t[r].split("="),c=i.slice(1).join("=");try{var u=decodeURIComponent(i[0]);if(o[u]=n.read(c,u),e===u)break}catch(e){}}return e?o[e]:o}},remove:function(t,n){r(t,"",e({},n,{expires:-1}))},withAttributes:function(n){return t(this.converter,e({},this.attributes,n))},withConverter:function(n){return t(e({},this.converter,n),this.attributes)}},{attributes:{value:Object.freeze(o)},converter:{value:Object.freeze(n)}})}({read:function(e){return'"'===e[0]&&(e=e.slice(1,-1)),e.replace(/(%[\dA-F]{2})+/gi,decodeURIComponent)},write:function(e){return encodeURIComponent(e).replace(/%(2[346BF]|3[AC-F]|40|5[BDE]|60|7[BCD])/g,decodeURIComponent)}},{path:"/"});return t}));
+  const mappingThemesSchema = {
+    system: "default",
+    light: "default",
+    dark: "slate"
+  }
+  const mappingThemesMedia = {
+    system: "",
+    light: "light",
+    dark: "dark"
+  }
+  const cookieTheme = Cookies.get("theme");
+
+  /* Compute base path once to integrate with instant loading */
+  __md_scope = new URL("{{ config.extra.scope | d(base_url) }}", location)
+
+  /* Compute hash from the given string - see https://bit.ly/3pvPjXG */
+  __md_hash = v => [...v].reduce((h, c) => (h << 5) - h + c.charCodeAt(0), 0)
+
+  /* Fetch the value for a key from the given storage */
+  __md_get = (key, storage = localStorage, scope = __md_scope) => {
+    //console.log(key),
+    if (key === "__palette") {
+      const inputsDom = document.querySelectorAll("[data-md-component=palette] > input");
+      const attr = `(prefers-color-scheme: ${mappingThemesMedia[cookieTheme]})`;
+      const themeStorage =  JSON.parse(storage.getItem(scope.pathname + "." + key));
+      if(cookieTheme) {
+        const index = [...inputsDom].findIndex(input => {
+          const atrrMedia = input.getAttribute("data-md-color-media");
+          return atrrMedia === attr;
+        })
+        const changesTheme =  {
+          ...themeStorage,
+          index: index,
+          media: `(prefers-color-scheme: ${mappingThemesMedia[cookieTheme]})`,
+          scheme: mappingThemesSchema[cookieTheme]
+        }
+        return changesTheme
+      } else {
+        return themeStorage;
+      }
+    } 
+    return JSON.parse(storage.getItem(scope.pathname + "." + key))
+    
+    
+  }
+
+  /* Persist a key-value pair in the given storage */
+  __md_set = (key, value, storage = localStorage, scope = __md_scope) => {
+    //console.log(key);
+    try {
+      if (key === "__palette") {
+        storage.setItem(scope.pathname + "." + key, JSON.stringify(value))
+        const regexpLight = new RegExp("light", 'g');
+        const isDark = value.color.scheme === "slate";
+        const isLight = regexpLight.test(value.color.media);
+        Cookies.set("theme", isDark ? "dark" : isLight ? "light" : "system", {
+          path: "/",
+          sameSite: "Lax",
+          secure: true,
+          domain: DOMAIN
+        })
+      } else {
+        storage.setItem(scope.pathname + "." + key, JSON.stringify(value))
+      }
+
+      
+    } catch (err) {
+      /* Uncritical, just swallow */
+    }
+  }
+</script>
